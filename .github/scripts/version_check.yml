@@ -1,0 +1,68 @@
+name: Terraform Module Version Checker
+
+on:
+  schedule:
+    - cron: '0 5 * * *'  # Todos los días a las 5 AM UTC (~2 AM Argentina)
+  workflow_dispatch:     # Permite ejecutarlo manualmente
+
+jobs:
+  check_versions:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up environment
+        run: sudo apt-get install -y jq curl
+
+      - name: Run version checker script
+        run: bash .github/scripts/check_versions.sh
+
+      - name: Check if modules are outdated
+        id: check
+        run: |
+          if [[ -s .module_issues.txt ]]; then
+            echo "outdated=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "outdated=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up GitHub CLI
+        if: steps.check.outputs.outdated == 'true'
+        uses: cli/cli-action@v1
+        with:
+          version: latest
+
+      - name: Handle issues per outdated module
+        if: steps.check.outputs.outdated == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          while IFS="|" read -r module used latest; do
+            title="${module} module not on date (${used} > ${latest})"
+            
+            echo "🔍 Searching for existing issue for $module"
+            issue_data=$(gh issue list --state open --search "$module" --json title,number --jq \
+              '.[] | select(.title | contains("'"$module"'"))')
+
+            if [[ -z "$issue_data" ]]; then
+              echo "🆕 Creating issue: $title"
+              gh issue create \
+                --title "$title" \
+                --body "The module \`$module\` is outdated.\n\n- Used: \`$used\`\n- Latest: \`$latest\`" \
+                --label terraform
+            else
+              number=$(echo "$issue_data" | jq -r '.number')
+              old_title=$(echo "$issue_data" | jq -r '.title')
+
+              if [[ "$old_title" != *"$latest"* ]]; then
+                echo "✏️ Updating issue #$number with new version"
+                gh issue edit "$number" \
+                  --title "$title" \
+                  --body "The module \`$module\` is outdated.\n\n- Used: \`$used\`\n- Latest: \`$latest\`"
+              else
+                echo "✅ Issue already exists and is up to date for $module"
+              fi
+            fi
+          done < .module_issues.txt

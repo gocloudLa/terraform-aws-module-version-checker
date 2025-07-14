@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # ------------------------------------------------------------------------------
 # 📄 Terraform Registry Module Version Checker
 #
@@ -8,16 +6,16 @@
 # It performs the following steps:
 # 
 # 1. Initializes Terraform without backend to safely fetch module data.
-# 2. Runs 'terraform modules' and overwrites modules.plain with current data.
-# 3. Extracts all registry module sources and their exact versions from the file.
-# 4. For each module, it queries the Terraform Registry API to check if the used
-#    version is the latest available.
-# 5. Generates a Markdown report indicating which modules are up to date and which are not.
+# 2. Runs 'terraform modules' and saves the output.
+# 3. Extracts all registry module sources and their exact versions.
+# 4. Compares used versions with the latest available from Terraform Registry.
+# 5. Generates a Markdown report AND a list of outdated modules in a machine-readable format.
 # ------------------------------------------------------------------------------
 
 INPUT_FILE="example/complete/modules.plain"
 OUTPUT_FILE="version_report.md"
 TMP_FILE=".modules_cleaned.tmp"
+ISSUE_FILE=".module_issues.txt"
 
 # Step 1: Always regenerate modules.plain
 echo "🔄 Generating fresh module list from 'terraform modules'..."
@@ -29,30 +27,25 @@ if [[ $? -ne 0 ]]; then
   exit 1
 fi
 
-# Step 2: Extract module source and exact version cleanly
+# Step 2: Extract module source and version cleanly
 sed -nE 's/^.*\[(registry\.terraform\.io[^]]+)\][[:space:]]+([0-9]+\.[0-9]+\.[0-9]+).*$/\1 => \2/p' "$INPUT_FILE" > "$TMP_FILE"
 
-echo ">>> Contents of $TMP_FILE:"
-cat "$TMP_FILE"
-echo ">>> End contents"
-
-# Step 3: Initialize Markdown report
+# Step 3: Initialize outputs
 echo "# 📦 Terraform Module Version Report" > "$OUTPUT_FILE"
 echo "_Generated on $(date)_" >> "$OUTPUT_FILE"
 echo "" >> "$OUTPUT_FILE"
+> "$ISSUE_FILE" # Clean any existing issue list
 
-# Step 4: Check each module version against the latest from Terraform Registry
+# Step 4: Process each module and compare versions
 while IFS="=>" read -r MODULE_PATH USED_VERSION; do
   MODULE_PATH=$(echo "$MODULE_PATH" | xargs)
   USED_VERSION=$(echo "$USED_VERSION" | xargs)
-  # Remove any non-numeric prefix like '>' or spaces
   USED_VERSION=$(echo "$USED_VERSION" | sed 's/^[^0-9]*//')
 
   if [[ -z "$MODULE_PATH" || "$MODULE_PATH" != registry.terraform.io/* ]]; then
     continue
   fi
 
-  # Clean submodules path (remove anything after //modules)
   MODULE_PATH_CLEAN=$(echo "$MODULE_PATH" | sed -E 's,//modules.*,,')
   IFS='/' read -r _ namespace name provider <<< "$MODULE_PATH_CLEAN"
 
@@ -80,9 +73,10 @@ while IFS="=>" read -r MODULE_PATH USED_VERSION; do
     echo "✅ \`${MODULE_PATH}\` is up to date (**$USED_VERSION**)" | tee -a "$OUTPUT_FILE"
   else
     echo "❌ \`${MODULE_PATH}\` is outdated (used: **$USED_VERSION**, latest: **$LATEST_VERSION**)" | tee -a "$OUTPUT_FILE"
+    echo "${namespace}/${name}/${provider}|${USED_VERSION}|${LATEST_VERSION}" >> "$ISSUE_FILE"
   fi
 
 done < "$TMP_FILE"
 
-# Clean up temporary file
+# Cleanup
 rm -f "$TMP_FILE"
