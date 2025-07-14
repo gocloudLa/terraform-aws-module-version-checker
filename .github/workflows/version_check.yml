@@ -3,32 +3,31 @@ name: Terraform Module Version Checker
 on:
   schedule:
     - cron: '0 10 * * *'  # Todos los días a las 10 AM UTC (~7 AM Argentina)
-  workflow_dispatch:     # Permite ejecutarlo manualmente desde GitHub
+  workflow_dispatch:     # Permite ejecutarlo manualmente
 
 jobs:
   check_versions:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🧾 Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v3
 
-      - name: 🧰 Install dependencies (jq, curl, unzip)
-        run: sudo apt-get update && sudo apt-get install -y jq curl unzip
+      - name: 🛠️ Install dependencies (jq, curl)
+        run: sudo apt-get update && sudo apt-get install -y jq curl unzip gnupg lsb-release
 
-      - name: ⬇️ Install latest Terraform
+      - name: 🛠️ Install Terraform (stable version)
         run: |
-          LATEST=$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r .current_version)
-          echo "Installing Terraform version $LATEST..."
-          curl -fsSL "https://releases.hashicorp.com/terraform/${LATEST}/terraform_${LATEST}_linux_amd64.zip" -o terraform.zip
-          unzip terraform.zip
+          TERRAFORM_VERSION=$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r .current_version)
+          curl -s -LO https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
+          unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip
           sudo mv terraform /usr/local/bin/
           terraform -version
 
       - name: 🚀 Run version checker script
         run: bash .github/scripts/check_versions.sh
 
-      - name: 🔍 Check if modules are outdated
+      - name: ✅ Check if modules are outdated
         id: check
         run: |
           if [[ -s .module_issues.txt ]]; then
@@ -37,11 +36,18 @@ jobs:
             echo "outdated=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: 🛠️ Set up GitHub CLI
+      - name: 🛠️ Install GitHub CLI (gh)
         if: steps.check.outputs.outdated == 'true'
-        uses: cli/gh-action@v2
+        run: |
+          type -p gh || (
+            curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg && \
+            sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg && \
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null && \
+            sudo apt update && sudo apt install gh -y
+          )
+          gh --version
 
-      - name: 📝 Handle issues per outdated module
+      - name: 🐛 Create or update issues for outdated modules
         if: steps.check.outputs.outdated == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
@@ -50,7 +56,7 @@ jobs:
             title="${module} module not on date (${used} > ${latest})"
             
             echo "🔍 Searching for existing issue for $module"
-            issue_data=$(gh issue list --state open --json title,number --jq \
+            issue_data=$(gh issue list --state open --search "$module" --json title,number --jq \
               '.[] | select(.title | contains("'"$module"'"))')
 
             if [[ -z "$issue_data" ]]; then
