@@ -3,25 +3,32 @@ name: Terraform Module Version Checker
 on:
   schedule:
     - cron: '0 10 * * *'  # Todos los días a las 10 AM UTC (~7 AM Argentina)
-  workflow_dispatch:     # Permite ejecutarlo manualmente
+  workflow_dispatch:     # Permite ejecutarlo manualmente desde GitHub
 
 jobs:
   check_versions:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: 🧾 Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up environment
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y jq curl gh
+      - name: 🧰 Install dependencies (jq, curl, unzip)
+        run: sudo apt-get update && sudo apt-get install -y jq curl unzip
 
-      - name: Run version checker script
+      - name: ⬇️ Install latest Terraform
+        run: |
+          LATEST=$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r .current_version)
+          echo "Installing Terraform version $LATEST..."
+          curl -fsSL "https://releases.hashicorp.com/terraform/${LATEST}/terraform_${LATEST}_linux_amd64.zip" -o terraform.zip
+          unzip terraform.zip
+          sudo mv terraform /usr/local/bin/
+          terraform -version
+
+      - name: 🚀 Run version checker script
         run: bash .github/scripts/check_versions.sh
 
-      - name: Check if modules are outdated
+      - name: 🔍 Check if modules are outdated
         id: check
         run: |
           if [[ -s .module_issues.txt ]]; then
@@ -30,23 +37,20 @@ jobs:
             echo "outdated=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Authenticate GH CLI
+      - name: 🛠️ Set up GitHub CLI
         if: steps.check.outputs.outdated == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: |
-          echo "$GH_TOKEN" | gh auth login --with-token
+        uses: cli/gh-action@v2
 
-      - name: Handle issues per outdated module
+      - name: 📝 Handle issues per outdated module
         if: steps.check.outputs.outdated == 'true'
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           while IFS="|" read -r module used latest; do
             title="${module} module not on date (${used} > ${latest})"
-
+            
             echo "🔍 Searching for existing issue for $module"
-            issue_data=$(gh issue list --state open --search "$module" --json title,number --jq \
+            issue_data=$(gh issue list --state open --json title,number --jq \
               '.[] | select(.title | contains("'"$module"'"))')
 
             if [[ -z "$issue_data" ]]; then
