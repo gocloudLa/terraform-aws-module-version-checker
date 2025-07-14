@@ -14,7 +14,9 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Set up environment
-        run: sudo apt-get install -y jq curl
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl gh
 
       - name: Run version checker script
         run: bash .github/scripts/check_versions.sh
@@ -28,9 +30,12 @@ jobs:
             echo "outdated=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Set up GitHub CLI
+      - name: Authenticate GH CLI
         if: steps.check.outputs.outdated == 'true'
-        uses: actions/github-cli@v2
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: |
+          echo "$GH_TOKEN" | gh auth login --with-token
 
       - name: Handle issues per outdated module
         if: steps.check.outputs.outdated == 'true'
@@ -39,7 +44,7 @@ jobs:
         run: |
           while IFS="|" read -r module used latest; do
             title="${module} module not on date (${used} > ${latest})"
-            
+
             echo "🔍 Searching for existing issue for $module"
             issue_data=$(gh issue list --state open --search "$module" --json title,number --jq \
               '.[] | select(.title | contains("'"$module"'"))')
