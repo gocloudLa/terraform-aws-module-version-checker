@@ -30,9 +30,7 @@ jobs:
 
       - name: Set up GitHub CLI
         if: steps.check.outputs.outdated == 'true'
-        uses: cli/cli-action@v1
-        with:
-          version: latest
+        uses: actions/github-cli@v2
 
       - name: Handle issues per outdated module
         if: steps.check.outputs.outdated == 'true'
