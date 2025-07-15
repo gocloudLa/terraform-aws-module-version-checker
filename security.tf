@@ -2,7 +2,7 @@ module "security_group_rds" {
   for_each = var.rds_parameters
 
   source  = "terraform-aws-modules/security-group/aws"
-  version = "~> 4.0"
+  version = "5.3.0"
 
   name            = "${local.common_name}-rds-${each.key}"
   vpc_id          = data.aws_vpc.this[each.key].id
