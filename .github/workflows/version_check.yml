@@ -5,19 +5,25 @@ on:
     #- cron: '*/5 * * * *'
     #- cron: '0 10 * * *'  # Todos los días a las 10 AM UTC (~7 AM Argentina)
   workflow_dispatch:     # Permite ejecutarlo manualmente
+  #push:
+  #  branches:
+  #    - nombre-branch
 
 jobs:
   check_versions:
     runs-on: ubuntu-latest
+    permissions:  # validar si esto permisos son necesario o existen  
+      issues: write
 
     steps:
       - name: 📥 Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: 🛠️ Install dependencies (jq, curl)
-        run: sudo apt-get update && sudo apt-get install -y jq curl unzip gnupg lsb-release
+      #- name: 🛠️ Install dependencies (jq, curl)  --> necesario ? probar
+      #  run: sudo apt-get update && sudo apt-get install -y jq curl unzip gnupg lsb-release
 
       - name: 🛠️ Install Terraform (stable version)
+        if: false
         run: |
           TERRAFORM_VERSION=$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r .current_version)
           curl -s -LO https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
@@ -25,9 +31,14 @@ jobs:
           sudo mv terraform /usr/local/bin/
           terraform -version
 
+      - name: 🛠️ Install Terraform (stable version)
+        uses: hashicorp/setup-terraform@v3
+
+        ## deberia estar aca el codigo. no en un archivo aparte.  No deberia chequear si un archivo esta vacio. el script deberia sacar una variable para que eso indique si hay modulos outdated. 
       - name: 🚀 Run version checker script
         run: bash .github/scripts/check_versions.sh
 
+        ## este paso esta de mas fixeando lo primero. no deberia hacer falta esto.
       - name: ✅ Check if modules are outdated
         id: check
         run: |
@@ -37,6 +48,7 @@ jobs:
             echo "outdated=false" >> "$GITHUB_OUTPUT"
           fi
 
+      # NO deberia hacer falta instalacion de gh.
       - name: 🛠️ Install GitHub CLI (gh)
         if: steps.check.outputs.outdated == 'true'
         run: |
@@ -51,7 +63,7 @@ jobs:
       - name: 🐛 Create or update issues for outdated modules
         if: steps.check.outputs.outdated == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}  # no deberia hacer falta usar github-token: ${{ secrets.GITHUB_TOKEN }} y setear permisos en workflow
         run: |
           while IFS="|" read -r module used latest; do
             title="${module} module not on date (${used} > ${latest})"
