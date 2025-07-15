@@ -3,8 +3,7 @@ name: Terraform Module Version Checker
 on:
   workflow_dispatch:
   schedule:
-      - cron: '*/5 * * * *' # TEST: Cada 5 minutos
-    # - cron: '0 10 * * *'  # Opcional: correr diariamente a las 7AM Argentina
+    - cron: '0 10 * * *'  # Run every day at 7AM - Argentina
 
 jobs:
   check_versions:
