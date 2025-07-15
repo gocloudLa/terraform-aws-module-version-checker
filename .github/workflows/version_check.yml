@@ -1,10 +1,10 @@
 name: Terraform Module Version Checker
 
 on:
+  workflow_dispatch:
   schedule:
-    #- cron: '*/5 * * * *'
-    #- cron: '0 10 * * *'  # Todos los días a las 10 AM UTC (~7 AM Argentina)
-  workflow_dispatch:     # Permite ejecutarlo manualmente
+      - cron: '*/5 * * * *' # TEST: Cada 5 minutos
+    # - cron: '0 10 * * *'  # Opcional: correr diariamente a las 7AM Argentina
 
 jobs:
   check_versions:
@@ -53,18 +53,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
-          while IFS="|" read -r module used latest; do
-            title="${module} module not on date (${used} > ${latest})"
-            
+          while IFS="|" read -r pattern module used latest; do
+            title="Upgrade(${pattern}): ${module} (${used} > ${latest})"
+
             echo "🔍 Searching for existing issue for $module"
-            issue_data=$(gh issue list --state open --search "$module" --json title,number --jq \
-              '.[] | select(.title | contains("'"$module"'"))')
+            issue_data=$(gh issue list --state open --search "$pattern" --json title,number --jq \
+              '.[] | select(.title | contains("'"$pattern"'"))')
 
             if [[ -z "$issue_data" ]]; then
               echo "🆕 Creating issue: $title"
               gh issue create \
                 --title "$title" \
-                --body "The module \`$module\` is outdated.\n\n- Used: \`$used\`\n- Latest: \`$latest\`" \
+                --body "The module \`${module}\` is outdated.\n\n- Pattern: \`${pattern}\`\n- Used: \`${used}\`\n- Latest: \`${latest}\`" \
                 --label terraform
             else
               number=$(echo "$issue_data" | jq -r '.number')
@@ -74,9 +74,9 @@ jobs:
                 echo "✏️ Updating issue #$number with new version"
                 gh issue edit "$number" \
                   --title "$title" \
-                  --body "The module \`$module\` is outdated.\n\n- Used: \`$used\`\n- Latest: \`$latest\`"
+                  --body "The module \`${module}\` is outdated.\n\n- Pattern: \`${pattern}\`\n- Used: \`${used}\`\n- Latest: \`${latest}\`"
               else
-                echo "✅ Issue already exists and is up to date for $module"
+                echo "✅ Issue already exists and is up to date for $pattern"
               fi
             fi
           done < .module_issues.txt
