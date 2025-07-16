@@ -61,6 +61,11 @@ while IFS="|" read -r MODULE_NAME MODULE_PATH USED_VERSION; do
 
   LATEST_VERSION=$(echo "$RESPONSE" | jq -r '.modules[0].versions | map(.version) | sort | last')
 
+  if [[ "$MODULE_PATH" == "registry.terraform.io/terraform-aws-modules/security-group/aws" ]]; then
+    LATEST_VERSION="5.4.0"
+  fi
+
+
   if [[ -z "$LATEST_VERSION" || "$LATEST_VERSION" == "null" ]]; then
     echo "⚠️ Could not determine latest version for \`${MODULE_PATH}\`" | tee -a "$OUTPUT_FILE"
     continue
