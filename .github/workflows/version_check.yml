@@ -17,13 +17,10 @@ jobs:
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🛠️ Install Terraform (stable version)
-        run: |
-          TERRAFORM_VERSION=$(curl -s https://checkpoint-api.hashicorp.com/v1/check/terraform | jq -r .current_version)
-          curl -s -LO https://releases.hashicorp.com/terraform/${TERRAFORM_VERSION}/terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-          unzip terraform_${TERRAFORM_VERSION}_linux_amd64.zip
-          sudo mv terraform /usr/local/bin/
-          terraform -version
+      - name: 🛠️ Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: latest
 
       - name: 🚀 Run version checker
         id: check
