@@ -5,16 +5,17 @@ on:
   schedule:
     - cron: '0 10 * * *'  # Run every day at 7AM - Argentina
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   check_versions:
     runs-on: ubuntu-latest
 
     steps:
       - name: 📥 Checkout repository
-        uses: actions/checkout@v3
-
-      - name: 🛠️ Install dependencies (jq, curl)
-        run: sudo apt-get update && sudo apt-get install -y jq curl unzip gnupg lsb-release
+        uses: actions/checkout@v4
 
       - name: 🛠️ Install Terraform (stable version)
         run: |
@@ -24,13 +25,76 @@ jobs:
           sudo mv terraform /usr/local/bin/
           terraform -version
 
-      - name: 🚀 Run version checker script
-        run: bash .github/scripts/check_versions.sh
-
-      - name: ✅ Check if modules are outdated
+      - name: 🚀 Run version checker
         id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [[ -s .module_issues.txt ]]; then
+          INPUT_FILE="example/complete/modules.plain"
+          OUTPUT_FILE="version_report.md"
+          TMP_FILE=".modules_cleaned.tmp"
+          ISSUE_FILE=".module_issues.txt"
+
+          echo "🔄 Generating fresh module list from 'terraform modules'..."
+          terraform init -input=false -backend=false > /dev/null
+          terraform modules > "$INPUT_FILE"
+
+          if [[ $? -ne 0 ]]; then
+            echo "❌ Failed to generate $INPUT_FILE using 'terraform modules'. Aborting."
+            exit 1
+          fi
+
+          grep -E '\[registry\.terraform\.io' "$INPUT_FILE" | \
+          sed -E 's/^[^"]*"([^"]+)"\[(registry\.terraform\.io[^]]+)\][[:space:]]+([0-9]+\.[0-9]+\.[0-9]+).*$/\1|\2|\3/' > "$TMP_FILE"
+
+          echo "# 📦 Terraform Module Version Report" > "$OUTPUT_FILE"
+          echo "_Generated on $(date)_" >> "$OUTPUT_FILE"
+          echo "" >> "$OUTPUT_FILE"
+          > "$ISSUE_FILE"
+
+          while IFS="|" read -r MODULE_NAME MODULE_PATH USED_VERSION; do
+            MODULE_NAME=$(echo "$MODULE_NAME" | sed 's/^module\.//; s/ *$//')
+            MODULE_PATH=$(echo "$MODULE_PATH" | xargs)
+            USED_VERSION=$(echo "$USED_VERSION" | xargs | sed 's/^[^0-9]*//')
+
+            if [[ -z "$MODULE_PATH" || "$MODULE_PATH" != registry.terraform.io/* ]]; then
+              continue
+            fi
+
+            MODULE_PATH_CLEAN=$(echo "$MODULE_PATH" | sed -E 's,//modules.*,,')
+            IFS='/' read -r _ namespace name provider <<< "$MODULE_PATH_CLEAN"
+
+            if [[ -z "$namespace" || -z "$name" || -z "$provider" ]]; then
+              echo "⚠️ Skipping malformed entry: $MODULE_PATH" | tee -a "$OUTPUT_FILE"
+              continue
+            fi
+
+            API_URL="https://registry.terraform.io/v1/modules/${namespace}/${name}/${provider}/versions"
+            RESPONSE=$(curl -s "$API_URL")
+
+            if [[ -z "$RESPONSE" || "$RESPONSE" == "null" ]]; then
+              echo "⚠️ Failed to fetch latest version for \`${MODULE_PATH}\` (API error)" | tee -a "$OUTPUT_FILE"
+              continue
+            fi
+
+            LATEST_VERSION=$(echo "$RESPONSE" | jq -r '.modules[0].versions | map(.version) | sort | last')
+
+            if [[ -z "$LATEST_VERSION" || "$LATEST_VERSION" == "null" ]]; then
+              echo "⚠️ Could not determine latest version for \`${MODULE_PATH}\`" | tee -a "$OUTPUT_FILE"
+              continue
+            fi
+
+            if [[ "$USED_VERSION" == "$LATEST_VERSION" ]]; then
+              echo "✅ \`${MODULE_PATH}\` is up to date (**$USED_VERSION**)" | tee -a "$OUTPUT_FILE"
+            else
+              echo "❌ \`${MODULE_PATH}\` is outdated (used: **$USED_VERSION**, latest: **$LATEST_VERSION**)" | tee -a "$OUTPUT_FILE"
+              echo "${MODULE_NAME}|${namespace}/${name}/${provider}|${USED_VERSION}|${LATEST_VERSION}" >> "$ISSUE_FILE"
+            fi
+          done < "$TMP_FILE"
+
+          rm -f "$TMP_FILE"
+
+          if [[ -s "$ISSUE_FILE" ]]; then
             echo "outdated=true" >> "$GITHUB_OUTPUT"
           else
             echo "outdated=false" >> "$GITHUB_OUTPUT"
@@ -50,7 +114,7 @@ jobs:
       - name: 🐛 Create or update issues for outdated modules
         if: steps.check.outputs.outdated == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           while IFS="|" read -r pattern module used latest; do
             title="Upgrade(${pattern}): ${module} (${used} > ${latest})"
