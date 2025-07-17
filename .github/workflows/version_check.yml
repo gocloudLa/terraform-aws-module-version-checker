@@ -170,6 +170,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
 
+          if [[ ! -f module-version-check/module_issues.txt ]]; then
+            echo "⛔ No se encontró el archivo module_issues.txt"
+            exit 1
+          fi
+
           # ========== (1) Itero por cada módulo desactualizado ==========
           while IFS="|" read -r pattern module used latest; do
             title="Upgrade(${pattern}): ${module} (${used} > ${latest})"
