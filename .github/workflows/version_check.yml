@@ -178,8 +178,6 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-
-
           # ========== (1) Itero por cada módulo desactualizado ==========
           while IFS="|" read -r pattern module used latest; do
             title="Upgrade(${pattern}): ${module} (${used} > ${latest})"
@@ -210,4 +208,4 @@ jobs:
                 echo "✅ Issue ya existente y actualizado para $pattern"
               fi
             fi
-          done < module_issues.txt
+          done < ./module_issues.txt
