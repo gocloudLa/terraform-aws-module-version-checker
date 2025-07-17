@@ -128,8 +128,10 @@ jobs:
         run: cat module_issues.txt || echo "Archivo vacío o no existe"
 
 
-      # ========== (5) Subo los archivos generados como artifacts ==========
+      # ========== (5) Subo los archivos generados como artifacts ========== 
+             
       - name: 📦 Guardar artifacts
+        if: check_versions.outputs.outdated == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: module-version-check
@@ -177,7 +179,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
 
-          if [[ ! -f module_issues.txt ]]; then
+          if [[ ! -f ./module_issues.txt ]]; then
             echo "⛔ No se encontró el archivo module_issues.txt"
             exit 1
           fi
