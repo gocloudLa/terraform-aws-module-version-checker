@@ -42,7 +42,7 @@ jobs:
           INPUT_FILE="example/complete/modules.plain"
           OUTPUT_FILE="version_report.md"
           TMP_FILE=".modules_cleaned.tmp"
-          ISSUE_FILE="module_issues.txt"
+          ISSUE_FILE="module-version-check/module_issues.txt"
 
           # ========== (1) PARSEO el modules.plain desde `terraform modules` ==========
           echo "🔄 Generando listado de módulos desde 'terraform modules'..."
@@ -130,7 +130,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: module-version-check
-          path: module_issues.txt
+          path: module-version-check/
+
   # ======================================================
   # JOB 2: Generador de Issues
   # (1) Lee .module_issues.txt generado por el job anterior
@@ -149,6 +150,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: module-version-check
+          path: module-version-check
 
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
