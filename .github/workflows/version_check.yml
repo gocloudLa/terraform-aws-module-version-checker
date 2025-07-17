@@ -1,6 +1,9 @@
 name: Terraform Module Version Checker
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
   schedule:
     - cron: '0 10 * * *'  # Todos los días a las 7AM Argentina
@@ -153,6 +156,9 @@ jobs:
 
       - name: 📥 Checkout repository
         uses: actions/checkout@v4
+
+      - name: 📝 Listar archivos subidos al artifact
+        run: ls -lah . || true
 
         # ========== Preparo el entorno con la CLI de GitHub ==========
       - name: 🛠️ Install GitHub CLI (gh)
