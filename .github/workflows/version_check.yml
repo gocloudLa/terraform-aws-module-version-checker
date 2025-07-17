@@ -49,6 +49,8 @@ jobs:
           terraform init -input=false -backend=false > /dev/null
           terraform modules > "$INPUT_FILE"
 
+          mkdir -p module-version-check
+          
           if [[ $? -ne 0 ]]; then
             echo "❌ Error al generar $INPUT_FILE. Abortando."
             exit 1
