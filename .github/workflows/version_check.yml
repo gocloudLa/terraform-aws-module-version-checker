@@ -110,15 +110,19 @@ jobs:
 
           rm -f "$TMP_FILE"
 
-           # ========== Me aseguro que el archivo exista aunque esté vacío ==========
-          touch "$ISSUE_FILE"
-
           # ========== Output para activar el segundo job ==========
           if [[ -s "$ISSUE_FILE" ]]; then
             echo "outdated=true" >> "$GITHUB_OUTPUT"
           else
             echo "outdated=false" >> "$GITHUB_OUTPUT"
           fi
+
+      
+      - name: 📝 Listar archivos antes de subir artifact
+        run: ls -lh . || true
+
+      - name: 📄 Mostrar contenido de .module_issues.txt
+        run: cat .module_issues.txt || echo "Archivo vacío o no existe"
 
 
       # ========== (5) Subo los archivos generados como artifacts ==========
