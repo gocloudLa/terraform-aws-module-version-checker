@@ -130,8 +130,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: module-version-check
-          path: ${{ github.workspace }}/.module_issues.txt 
-
+          path: ./example/complete/.module_issues.txt
   # ======================================================
   # JOB 2: Generador de Issues
   # (1) Lee .module_issues.txt generado por el job anterior
