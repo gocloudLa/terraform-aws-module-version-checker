@@ -177,7 +177,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
 
-          if [[ ! -f module-version-check/module_issues.txt ]]; then
+          if [[ ! -f module_issues.txt ]]; then
             echo "⛔ No se encontró el archivo module_issues.txt"
             exit 1
           fi
