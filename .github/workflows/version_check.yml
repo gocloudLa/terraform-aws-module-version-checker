@@ -131,7 +131,7 @@ jobs:
       # ========== (5) Subo los archivos generados como artifacts ========== 
              
       - name: 📦 Guardar artifacts
-        if: ${{ steps.check_versions.outputs.outdated == 'true' }}
+        if: ${{ steps.check_versions.outputs.outdated == true }}
         uses: actions/upload-artifact@v4
         with:
           name: module-version-check
