@@ -102,21 +102,24 @@ jobs:
               echo "✅ \`${MODULE_PATH}\` está actualizado (**$USED_VERSION**)" | tee -a "$OUTPUT_FILE"
             else
               echo "❌ \`${MODULE_PATH}\` está desactualizado (usado: **$USED_VERSION**, último: **$LATEST_VERSION**)" | tee -a "$OUTPUT_FILE"
+              
               # ========== (4) Guardo módulo desactualizado en .module_issues.txt ==========
               echo "${MODULE_NAME}|${namespace}/${name}/${provider}|${USED_VERSION}|${LATEST_VERSION}" >> "$ISSUE_FILE"
             fi
           done < "$TMP_FILE"
 
           rm -f "$TMP_FILE"
-        
-          # ========== Verifico que el archivo exista y tenga contenido ==========
-          if [[ -f "$ISSUE_FILE" ]]; then
-            echo "✅ El archivo $ISSUE_FILE fue creado correctamente:"
-            cat "$ISSUE_FILE"
+
+           # ========== Me aseguro que el archivo exista aunque esté vacío ==========
+          touch "$ISSUE_FILE"
+
+          # ========== Output para activar el segundo job ==========
+          if [[ -s "$ISSUE_FILE" ]]; then
+            echo "outdated=true" >> "$GITHUB_OUTPUT"
           else
-            echo "❌ El archivo $ISSUE_FILE no existe"
-            exit 1
+            echo "outdated=false" >> "$GITHUB_OUTPUT"
           fi
+
 
       # ========== (5) Subo los archivos generados como artifacts ==========
       - name: 📦 Guardar artifacts
