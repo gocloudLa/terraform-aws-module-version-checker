@@ -61,7 +61,7 @@ jobs:
           echo "# 📦 Terraform Module Version Report" > "$OUTPUT_FILE"
           echo "_Generated on $(date)_" >> "$OUTPUT_FILE"
           echo "" >> "$OUTPUT_FILE"
-          > "$ISSUE_FILE"
+          touch "$ISSUE_FILE"
 
           # ========== (2) CONSULTA de versiones y COMPARACIÓN ==========
           while IFS="|" read -r MODULE_NAME MODULE_PATH USED_VERSION; do
@@ -108,12 +108,14 @@ jobs:
           done < "$TMP_FILE"
 
           rm -f "$TMP_FILE"
-
-          # ========== Output para activar el segundo job ==========
-          if [[ -s "$ISSUE_FILE" ]]; then
-            echo "outdated=true" >> "$GITHUB_OUTPUT"
+        
+          # ========== Verifico que el archivo exista y tenga contenido ==========
+          if [[ -f "$ISSUE_FILE" ]]; then
+            echo "✅ El archivo $ISSUE_FILE fue creado correctamente:"
+            cat "$ISSUE_FILE"
           else
-            echo "outdated=false" >> "$GITHUB_OUTPUT"
+            echo "❌ El archivo $ISSUE_FILE no existe"
+            exit 1
           fi
 
       # ========== (5) Subo los archivos generados como artifacts ==========
