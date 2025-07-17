@@ -168,6 +168,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          cd module-version-check
 
           # ========== (1) Itero por cada módulo desactualizado ==========
           while IFS="|" read -r pattern module used latest; do
