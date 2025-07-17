@@ -42,7 +42,7 @@ jobs:
           INPUT_FILE="example/complete/modules.plain"
           OUTPUT_FILE="version_report.md"
           TMP_FILE=".modules_cleaned.tmp"
-          ISSUE_FILE=".module_issues.txt"
+          ISSUE_FILE="module_issues.txt"
 
           # ========== (1) PARSEO el modules.plain desde `terraform modules` ==========
           echo "🔄 Generando listado de módulos desde 'terraform modules'..."
@@ -121,8 +121,8 @@ jobs:
       - name: 📝 Listar archivos antes de subir artifact
         run: ls -lah . || true
 
-      - name: 📄 Mostrar contenido de .module_issues.txt
-        run: cat .module_issues.txt || echo "Archivo vacío o no existe"
+      - name: 📄 Mostrar contenido de module_issues.txt
+        run: cat module_issues.txt || echo "Archivo vacío o no existe"
 
 
       # ========== (5) Subo los archivos generados como artifacts ==========
@@ -130,7 +130,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: module-version-check
-          path: ./example/complete/.module_issues.txt
+          path: module_issues.txt
   # ======================================================
   # JOB 2: Generador de Issues
   # (1) Lee .module_issues.txt generado por el job anterior
@@ -199,4 +199,4 @@ jobs:
                 echo "✅ Issue ya existente y actualizado para $pattern"
               fi
             fi
-          done < .module_issues.txt
+          done < module_issues.txt
