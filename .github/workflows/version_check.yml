@@ -119,7 +119,7 @@ jobs:
 
       
       - name: 📝 Listar archivos antes de subir artifact
-        run: ls -lh . || true
+        run: ls -lah . || true
 
       - name: 📄 Mostrar contenido de .module_issues.txt
         run: cat .module_issues.txt || echo "Archivo vacío o no existe"
@@ -130,7 +130,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: module-version-check
-          path: .module_issues.txt 
+          path: /.module_issues.txt 
 
   # ======================================================
   # JOB 2: Generador de Issues
