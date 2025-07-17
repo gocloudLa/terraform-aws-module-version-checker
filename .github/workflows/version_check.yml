@@ -155,7 +155,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: module-version-check
-          path: module_issues.txt
+          #path: module_issues.txt
 
       #- name: 📥 Checkout repository
       #  uses: actions/checkout@v4
@@ -208,4 +208,4 @@ jobs:
                 echo "✅ Issue ya existente y actualizado para $pattern"
               fi
             fi
-          done < ./module_issues.txt
+          done < ./module-version-check/module_issues.txt
