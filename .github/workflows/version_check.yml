@@ -168,7 +168,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd module-version-check
+          FILE="module-version-check/module_issues.txt"
+
+          if [[ ! -f "$FILE" ]]; then
+            echo "❌ No se encontró $FILE"
+            exit 1
+          fi
 
           # ========== (1) Itero por cada módulo desactualizado ==========
           while IFS="|" read -r pattern module used latest; do
@@ -200,4 +205,4 @@ jobs:
                 echo "✅ Issue ya existente y actualizado para $pattern"
               fi
             fi
-          done < module_issues.txt
+          done < "$FILE"
