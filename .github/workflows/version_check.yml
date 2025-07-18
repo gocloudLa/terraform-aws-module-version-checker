@@ -157,8 +157,8 @@ jobs:
           name: module-version-check
           path: module-version-check # Chequear aca
 
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
+      #- name: 📥 Checkout repository
+      #  uses: actions/checkout@v4
 
       - name: 📝 Listar archivos subidos al artifact
         run: ls -lah . || true
