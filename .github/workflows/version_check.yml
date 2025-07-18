@@ -174,6 +174,12 @@ jobs:
           )
           gh --version
 
+      - name: 📝 Listar archivos descargados
+        run: ls -lR module-version-check || echo "No existe el directorio module-version-check"
+
+      - name: 📄 Mostrar contenido de module_issues.txt
+        run: cat module-version-check/module_issues.txt
+
       - name: 🐛 Crear o actualizar issues para módulos desactualizados
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
