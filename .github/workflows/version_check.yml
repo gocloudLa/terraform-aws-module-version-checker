@@ -151,14 +151,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
       - name: 📥 Descargar artifacts del job anterior
         uses: actions/download-artifact@v4
         with:
           name: module-version-check
           path: module-version-check # Chequear aca
-
-      - name: 📥 Checkout repository
-        uses: actions/checkout@v4
 
       - name: 📝 Listar archivos subidos al artifact
         run: ls -lah . || true
