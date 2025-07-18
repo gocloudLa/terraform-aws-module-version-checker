@@ -20,7 +20,7 @@ on:
       - main
   workflow_dispatch:
   schedule:
-    - cron: '0 10 * * *'  # Todos los días a las 7AM Argentina
+    ##- cron: '0 10 * * *'  # Todos los días a las 7AM Argentina
 
 permissions:
   contents: read
