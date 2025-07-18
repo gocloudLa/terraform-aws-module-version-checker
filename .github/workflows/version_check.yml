@@ -135,7 +135,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: module-version-check
-          path: module_issues.txt 
+          path: module_issues.txt  # Chequear aca
 
   # ======================================================
   # JOB 2: Generador de Issues
@@ -155,7 +155,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: module-version-check
-          path: ./artifacts
+          path: module-version-check # Chequear aca
 
       #- name: 📥 Checkout repository
       #  uses: actions/checkout@v4
@@ -178,6 +178,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+
+
           # ========== (1) Itero por cada módulo desactualizado ==========
           while IFS="|" read -r pattern module used latest; do
             title="Upgrade(${pattern}): ${module} (${used} > ${latest})"
@@ -208,4 +210,4 @@ jobs:
                 echo "✅ Issue ya existente y actualizado para $pattern"
               fi
             fi
-          done < ./artifacts/module_issues.txt
+          done < module-version-check # Chequear aca
