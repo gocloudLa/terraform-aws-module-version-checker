@@ -210,4 +210,4 @@ jobs:
                 echo "✅ Issue ya existente y actualizado para $pattern"
               fi
             fi
-          done < module-version-check # Chequear aca
+          done < module-version-check/module_issues.txt 
