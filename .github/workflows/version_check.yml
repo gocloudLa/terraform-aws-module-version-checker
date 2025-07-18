@@ -37,6 +37,11 @@ jobs:
         with:
           terraform_version: latest
 
+      - name: 🏗️ Generar listado de módulos
+        run: |
+          terraform init -input=false -backend=false > /dev/null
+          terraform modules > example/complete/modules.plain   
+
       - name: 🚀 Run version checker
         id: check
         env:
@@ -47,15 +52,11 @@ jobs:
           TMP_FILE=".modules_cleaned.tmp"
           ISSUE_FILE="module_issues.txt"
 
-          # ========== (1) PARSEO el modules.plain desde `terraform modules` ==========
-          echo "🔄 Generando listado de módulos desde 'terraform modules'..."
-          terraform init -input=false -backend=false > /dev/null
-          terraform modules > "$INPUT_FILE"
-
-          if [[ $? -ne 0 ]]; then
-            echo "❌ Error al generar $INPUT_FILE. Abortando."
+          if [[ ! -f "$INPUT_FILE" ]]; then
+            echo "❌ No existe $INPUT_FILE. Abortando."
             exit 1
           fi
+
 
           # ========== (1) Extraigo campos de interés: module_name, path, version ==========
           sed -nE 's/.*"([^"]+)"\[([^]]+)\][[:space:]]+([0-9]+\.[0-9]+\.[0-9]+).*$/\1|\2|\3/p' "$INPUT_FILE" > "$TMP_FILE"
