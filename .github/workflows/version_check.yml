@@ -1,3 +1,17 @@
+###################################################################
+#              Terraform Module Version Checker                   #
+#                                                                 #
+# (Terraform init + Terraform modules = modules.plain) ->         #
+# (version.report.md) -> (module.issues.txt) ->                   #
+#    (Github Actions) -> (Creacion Issues cada un dia)            #
+#                                                                 #
+###################################################################
+
+# modules.plain: archivo generado por terraform que contiene los modulos utilizados en el proyecto
+# version_report.md: archivo generado por el script que contiene el reporte de versiones de los modulos
+# module_issues.txt: archivo generado por el script que contiene solo los modulos desactualizados
+
+
 name: Terraform Module Version Checker
 
 on:
@@ -107,7 +121,7 @@ jobs:
             else
               echo "❌ \`${MODULE_PATH}\` está desactualizado (usado: **$USED_VERSION**, último: **$LATEST_VERSION**)" | tee -a "$OUTPUT_FILE"
               
-              # ========== (4) Guardo módulo desactualizado en module_issues.txt ==========
+              # ========== (4) Guardo el módulo desactualizado en module_issues.txt ==========
               echo "${MODULE_NAME}|${namespace}/${name}/${provider}|${USED_VERSION}|${LATEST_VERSION}" >> "$ISSUE_FILE"
             fi
           done < "$TMP_FILE"
