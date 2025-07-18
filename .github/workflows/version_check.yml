@@ -121,8 +121,8 @@ jobs:
           fi
 
       
-      - name: 📝 Listar archivos antes de subir artifact
-        run: ls -lh . || true
+      ##- name: 📝 Listar archivos antes de subir artifact
+      ##  run: ls -lh . || true
 
       - name: 📄 Mostrar contenido de module_issues.txt
         run: cat module_issues.txt || echo "Archivo vacío o no existe"
@@ -161,8 +161,8 @@ jobs:
           name: module-version-check
           path: module-version-check # Chequear aca
 
-      - name: 📝 Listar archivos subidos al artifact
-        run: ls -lah . || true
+      ##- name: 📝 Listar archivos subidos al artifact
+      ##  run: ls -lah . || true
 
         # ========== Preparo el entorno con la CLI de GitHub ==========
       - name: 🛠️ Install GitHub CLI (gh)
@@ -175,11 +175,11 @@ jobs:
           )
           gh --version
 
-      - name: 📝 Listar archivos descargados
-        run: ls -lR module-version-check || echo "No existe el directorio module-version-check"
+      ##- name: 📝 Listar archivos descargados
+      ##  run: ls -lR module-version-check || echo "No existe el directorio module-version-check"
 
-      - name: 📄 Mostrar contenido de module_issues.txt
-        run: cat module-version-check/module_issues.txt
+      ##- name: 📄 Mostrar contenido de module_issues.txt
+      ##  run: cat module-version-check/module_issues.txt
 
       - name: 🐛 Crear o actualizar issues para módulos desactualizados
         env:
